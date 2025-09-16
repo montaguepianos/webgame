@@ -1,0 +1,23 @@
+[
+  {
+    "id": "prelude_c",
+    "title": "Prelude in C Fragment",
+    "composer": "J.S. Bach",
+    "bpm": 96,
+    "barLength": 4
+  },
+  {
+    "id": "ode_to_joy",
+    "title": "Ode to Joy Theme",
+    "composer": "L. van Beethoven",
+    "bpm": 104,
+    "barLength": 4
+  },
+  {
+    "id": "pachelbel",
+    "title": "Pachelbel Progression",
+    "composer": "J. Pachelbel",
+    "bpm": 90,
+    "barLength": 4
+  }
+]

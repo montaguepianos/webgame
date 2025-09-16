@@ -1,74 +1,121 @@
 import type { NoteName } from '@melody-dash/shared';
-
-const NOTE_FREQUENCIES: Record<NoteName, number> = {
-  C3: 130.81,
-  D3: 146.83,
-  E3: 164.81,
-  F3: 174.61,
-  G3: 196,
-  A3: 220,
-  B3: 246.94,
-  C4: 261.63,
-  D4: 293.66,
-  E4: 329.63,
-  F4: 349.23,
-  G4: 392,
-  A4: 440,
-  B4: 493.88,
-  C5: 523.25,
-};
-
-const LOOP_BEATS_PER_MINUTE = 100;
-const NOTE_DURATION = 0.4;
+import MusicPlayer from '../audio/MusicPlayer';
+import { AUTO_TRACK_ID, musicTracks, noteSources } from '../audio/assets';
 
 export interface AudioState {
   volume: number;
   muted: boolean;
+  song: string;
 }
+
+const NOTE_NAMES = Object.keys(noteSources) as NoteName[];
 
 class AudioManager {
   private context?: AudioContext;
 
   private masterGain?: GainNode;
 
+  private musicGain?: GainNode;
+
+  private sfxGain?: GainNode;
+
+  private musicPlayer?: MusicPlayer;
+
   private noteBuffers: Map<NoteName, AudioBuffer> = new Map();
-
-  private loopBuffer?: AudioBuffer;
-
-  private loopSource?: AudioBufferSourceNode;
 
   private state: AudioState = {
     volume: 0.7,
     muted: false,
+    song: AUTO_TRACK_ID,
   };
 
-  async initialize(): Promise<void> {
-    if (!this.context) {
-      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-      if (!AudioContextClass) {
-        return;
-      }
+  private unlocked = false;
 
-      this.context = new AudioContextClass();
-      await this.context.resume();
-      this.masterGain = this.context.createGain();
-      this.masterGain.gain.value = this.state.muted ? 0 : this.state.volume;
-      this.masterGain.connect(this.context.destination);
-      await this.prepareNoteBuffers();
-      await this.prepareLoop();
+  async initialize(): Promise<void> {
+    if (this.context) {
+      return;
     }
+    const legacyContext = (
+      window as Window & {
+        webkitAudioContext?: typeof AudioContext;
+      }
+    ).webkitAudioContext;
+    const AudioContextClass = window.AudioContext ?? legacyContext;
+    if (!AudioContextClass) {
+      return;
+    }
+    this.context = new AudioContextClass();
+    try {
+      await this.context.resume();
+      this.unlocked = true;
+    } catch (error) {
+      this.unlocked = false;
+    }
+
+    this.masterGain = this.context.createGain();
+    this.musicGain = this.context.createGain();
+    this.sfxGain = this.context.createGain();
+
+    this.masterGain.gain.value = this.state.muted ? 0 : this.state.volume;
+    this.musicGain.gain.value = 0.6;
+    this.sfxGain.gain.value = 1;
+
+    this.musicGain.connect(this.masterGain);
+    this.sfxGain.connect(this.masterGain);
+    this.masterGain.connect(this.context.destination);
+
+    this.musicPlayer = new MusicPlayer(this.context);
+    this.musicPlayer.connect(this.musicGain);
+    this.musicPlayer.setBaseVolume(0.6);
+
+    await this.prepareNoteBuffers();
   }
 
-  get audioContext(): AudioContext | undefined {
-    return this.context;
+  async unlock(): Promise<void> {
+    if (!this.context) {
+      await this.initialize();
+      return;
+    }
+    if (this.unlocked) {
+      return;
+    }
+    await this.context.resume();
+    this.unlocked = true;
+  }
+
+  get volume(): number {
+    return this.state.volume;
   }
 
   get muted(): boolean {
     return this.state.muted;
   }
 
-  get volume(): number {
-    return this.state.volume;
+  get song(): string {
+    return this.state.song;
+  }
+
+  getTracks(): { id: string; title: string; composer: string }[] {
+    return [
+      {
+        id: AUTO_TRACK_ID,
+        title: 'Auto rotation',
+        composer: 'Cycle each run',
+      },
+      ...musicTracks.map((track) => ({
+        id: track.id,
+        title: track.title,
+        composer: track.composer,
+      })),
+    ];
+  }
+
+  getCurrentTrackMeta() {
+    const activeId =
+      this.state.song === AUTO_TRACK_ID
+        ? (this.musicPlayer?.getCurrentTrack() ?? musicTracks[0]?.id)
+        : this.state.song;
+    return musicTracks.find((track) => track.id === activeId);
   }
 
   async setVolume(nextVolume: number): Promise<void> {
@@ -77,7 +124,9 @@ class AudioManager {
       await this.initialize();
     }
     if (this.masterGain && !this.state.muted) {
-      this.masterGain.gain.value = this.state.volume;
+      const now = this.context?.currentTime ?? 0;
+      this.masterGain.gain.cancelScheduledValues(now);
+      this.masterGain.gain.linearRampToValueAtTime(this.state.volume, now + 0.1);
     }
   }
 
@@ -88,15 +137,44 @@ class AudioManager {
       await this.initialize();
     }
     if (this.masterGain) {
-      this.masterGain.gain.value = nextMuted ? 0 : this.state.volume;
+      const now = this.context?.currentTime ?? 0;
+      this.masterGain.gain.cancelScheduledValues(now);
+      this.masterGain.gain.linearRampToValueAtTime(nextMuted ? 0 : this.state.volume, now + 0.08);
     }
+  }
+
+  async setSong(song: string): Promise<void> {
+    this.state.song = song;
+    if (!this.context) {
+      await this.initialize();
+    }
+    if (this.musicPlayer && this.unlocked) {
+      await this.musicPlayer.play(song);
+    }
+  }
+
+  async startLoop(): Promise<void> {
+    if (!this.context) {
+      await this.initialize();
+    }
+    if (!this.musicPlayer) {
+      return;
+    }
+    if (!this.unlocked) {
+      await this.unlock();
+    }
+    await this.musicPlayer.play(this.state.song);
+  }
+
+  stopLoop(): void {
+    this.musicPlayer?.stop();
   }
 
   async playNote(note: NoteName, velocity = 1): Promise<void> {
     if (!this.context) {
       await this.initialize();
     }
-    if (!this.context || !this.masterGain) {
+    if (!this.context || !this.sfxGain) {
       return;
     }
     const buffer = this.noteBuffers.get(note);
@@ -108,20 +186,23 @@ class AudioManager {
     const gain = this.context.createGain();
     gain.gain.value = this.state.muted ? 0 : this.state.volume * velocity;
     source.connect(gain);
-    gain.connect(this.masterGain);
-    source.start();
+    gain.connect(this.sfxGain);
+    source.start(0);
+    this.musicPlayer?.duck(0.18, 0.4);
   }
 
   async playMotif(notes: NoteName[]): Promise<void> {
     if (!this.context) {
       await this.initialize();
     }
-    if (!this.context) {
+    if (!this.context || !this.sfxGain) {
       return;
     }
-    let when = this.context.currentTime;
-    const step = NOTE_DURATION;
-    notes.forEach((note, index) => {
+    let when = this.context.currentTime + 0.1;
+    const bpm = this.getCurrentTrackMeta()?.bpm ?? 96;
+    const beatDuration = 60 / bpm;
+    const step = beatDuration / 2;
+    notes.forEach((note) => {
       const buffer = this.noteBuffers.get(note);
       if (!buffer) {
         return;
@@ -129,76 +210,49 @@ class AudioManager {
       const source = this.context!.createBufferSource();
       source.buffer = buffer;
       const gain = this.context!.createGain();
-      const velocity = Math.max(0.4, 1 - index * 0.05);
-      gain.gain.value = this.state.muted ? 0 : this.state.volume * velocity;
+      gain.gain.value = this.state.muted ? 0 : this.state.volume * 0.9;
       source.connect(gain);
-      gain.connect(this.masterGain!);
+      gain.connect(this.sfxGain!);
       source.start(when);
       when += step;
     });
-  }
-
-  async startLoop(): Promise<void> {
-    if (!this.context) {
-      await this.initialize();
-    }
-    if (!this.context || !this.loopBuffer || this.loopSource) {
-      return;
-    }
-    const source = this.context.createBufferSource();
-    source.buffer = this.loopBuffer;
-    source.loop = true;
-    source.connect(this.masterGain!);
-    source.start(0);
-    this.loopSource = source;
-  }
-
-  stopLoop(): void {
-    if (this.loopSource) {
-      this.loopSource.stop();
-      this.loopSource.disconnect();
-      this.loopSource = undefined;
-    }
+    this.musicPlayer?.duck(0.35, 0.6);
   }
 
   private async prepareNoteBuffers(): Promise<void> {
     if (!this.context || this.noteBuffers.size > 0) {
       return;
     }
-    const ctx = this.context;
-    Object.entries(NOTE_FREQUENCIES).forEach(([note, freq]) => {
-      const buffer = ctx.createBuffer(1, ctx.sampleRate * NOTE_DURATION, ctx.sampleRate);
-      const data = buffer.getChannelData(0);
-      for (let i = 0; i < data.length; i += 1) {
-        const time = i / ctx.sampleRate;
-        const envelope = Math.exp(-3 * time);
-        data[i] = Math.sin(2 * Math.PI * freq * time) * envelope;
-      }
-      this.noteBuffers.set(note as NoteName, buffer);
-    });
+    await Promise.all(
+      NOTE_NAMES.map(async (note) => {
+        const source = noteSources[note];
+        const urls = [source.ogg, source.mp3];
+        const buffer = await this.fetchAudioBuffer(urls);
+        if (buffer) {
+          this.noteBuffers.set(note, buffer);
+        }
+      }),
+    );
   }
 
-  private async prepareLoop(): Promise<void> {
-    if (!this.context || this.loopBuffer) {
-      return;
+  private async fetchAudioBuffer(urls: string[]): Promise<AudioBuffer | undefined> {
+    if (!this.context) {
+      return undefined;
     }
-    const ctx = this.context;
-    const secondsPerBeat = 60 / LOOP_BEATS_PER_MINUTE;
-    const duration = secondsPerBeat * 8;
-    const buffer = ctx.createBuffer(1, ctx.sampleRate * duration, ctx.sampleRate);
-    const data = buffer.getChannelData(0);
-    const baseFreq = 110;
-    for (let i = 0; i < data.length; i += 1) {
-      const time = i / ctx.sampleRate;
-      const beat = Math.floor(time / secondsPerBeat);
-      const withinBeat = time % secondsPerBeat;
-      const envelope = Math.exp(-6 * withinBeat);
-      const harmonic = Math.sin(2 * Math.PI * baseFreq * time) * 0.5;
-      const bell = Math.sin(2 * Math.PI * baseFreq * 2 * time) * 0.25;
-      const accent = beat % 4 === 0 ? 1 : 0.6;
-      data[i] = (harmonic + bell) * envelope * accent;
+    for (const url of urls) {
+      try {
+        const response = await fetch(url);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch ${url}`);
+        }
+        const arrayBuffer = await response.arrayBuffer();
+        const decoded = await this.context.decodeAudioData(arrayBuffer.slice(0));
+        return decoded;
+      } catch (error) {
+        // try next
+      }
     }
-    this.loopBuffer = buffer;
+    return undefined;
   }
 }
 

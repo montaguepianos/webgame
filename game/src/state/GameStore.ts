@@ -26,6 +26,9 @@ class GameStore {
     if (typeof next.muted === 'boolean') {
       await this.audioManager.toggleMute(this.settings.muted);
     }
+    if (typeof next.song === 'string') {
+      await this.audioManager.setSong(this.settings.song);
+    }
     return this.getSettings();
   }
 

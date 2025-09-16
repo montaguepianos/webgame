@@ -29,13 +29,13 @@ export const createScoresRouter = (repository: ScoreRepository): Router => {
   });
 
   router.get('/top', async (req, res) => {
-    const parsed = scoreQuerySchema.safeParse(req.query.limit);
+    const parsed = scoreQuerySchema.safeParse(req.query);
     if (!parsed.success) {
       return res.status(400).json({ error: 'Invalid limit', issues: parsed.error.issues });
     }
 
     try {
-      const entries = await repository.getTopScores(parsed.data);
+      const entries = await repository.getTopScores(parsed.data.limit);
       return res.json({ entries });
     } catch (error) {
       return res.status(500).json({ error: 'Failed to load scores', detail: `${error}` });

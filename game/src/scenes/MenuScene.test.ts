@@ -5,12 +5,13 @@ import MenuScene from './MenuScene';
 describe('MenuScene', () => {
   it('transitions to play scene when startGame is invoked', () => {
     const scene = new MenuScene();
-    (scene as any).scene = {
-      start: vi.fn(),
+    const startSpy = vi.fn();
+    (scene as unknown as { scene: { start: (key: string) => void } }).scene = {
+      start: startSpy,
     };
 
-    (scene as any).startGame();
+    (scene as unknown as { startGame: () => void }).startGame();
 
-    expect((scene as any).scene.start).toHaveBeenCalledWith(GAME_SCENES.PLAY);
+    expect(startSpy).toHaveBeenCalledWith(GAME_SCENES.PLAY);
   });
 });

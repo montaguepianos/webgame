@@ -13,6 +13,10 @@ describe('scene scaffolding', () => {
   });
 
   it('derives scene keys from Phaser Scene definitions', () => {
-    expect(new BootScene().scene.key).toBe('Boot');
+    expect(BootScene.KEY).toBe('Boot');
+    expect(PreloadScene.KEY).toBe('Preload');
+    expect(MenuScene.KEY).toBe('Menu');
+    expect(PlayScene.KEY).toBe('Play');
+    expect(GameOverScene.KEY).toBe('GameOver');
   });
 });

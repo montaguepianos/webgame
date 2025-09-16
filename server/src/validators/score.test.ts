@@ -18,7 +18,7 @@ describe('score validators', () => {
   });
 
   it('normalises query limits', () => {
-    const parsed = scoreQuerySchema.parse('10');
-    expect(parsed).toBe(10);
+    const parsed = scoreQuerySchema.parse({ limit: '10' });
+    expect(parsed.limit).toBe(10);
   });
 });

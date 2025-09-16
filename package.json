@@ -17,18 +17,21 @@
     "lint:markdown": "pnpm exec markdownlint \"**/*.md\"",
     "format": "pnpm exec prettier \"**/*.{ts,tsx,js,json,md,css,html}\" --write",
     "format:check": "pnpm exec prettier \"**/*.{ts,tsx,js,json,md,css,html}\" --check",
+    "generate:art": "node scripts/generate-art.mjs",
+    "generate:audio": "node scripts/generate-audio.mjs",
     "ci": "pnpm run lint && pnpm run typecheck && pnpm run test && pnpm run build",
     "start": "pnpm --filter server start"
   },
   "devDependencies": {
+    "@types/node": "^20.11.30",
     "@typescript-eslint/eslint-plugin": "^7.0.0",
     "@typescript-eslint/parser": "^7.0.0",
-    "@types/node": "^20.11.30",
     "eslint": "^8.56.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-prettier": "^5.1.3",
     "husky": "^9.0.0",
     "markdownlint-cli": "^0.39.0",
+    "pngjs": "^7.0.0",
     "prettier": "^3.2.5",
     "typescript": "^5.4.2"
   },

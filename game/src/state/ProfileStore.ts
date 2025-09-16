@@ -5,7 +5,8 @@ export interface PlayerProfile {
   seed: string;
 }
 
-const randomSeed = () => (crypto?.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2));
+const randomSeed = () =>
+  crypto?.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2);
 
 class ProfileStore {
   private profile: PlayerProfile;

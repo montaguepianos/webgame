@@ -32,6 +32,27 @@ describe('ScoreSystem', () => {
     system.update(1_000);
     expect(system.getSnapshot().remainingMs).toBe(4_000);
   });
+
+  it('applies pedal bonus and increases combo', () => {
+    const system = new ScoreSystem(30_000);
+    system.start();
+    system.registerNote('C4');
+    const { bonus, combo } = system.registerPedal();
+    expect(bonus).toBeGreaterThan(0);
+    expect(combo).toBeGreaterThan(1);
+    expect(system.getSnapshot().totalScore).toBeGreaterThan(bonus);
+  });
+
+  it('rest tokens extend time and can recover mistakes', () => {
+    const system = new ScoreSystem(10_000);
+    system.start();
+    system.registerMiss();
+    const before = system.getSnapshot().remainingMs;
+    const result = system.registerRest();
+    expect(result.timeAdded).toBeGreaterThan(0);
+    expect(result.mistakes).toBe(0);
+    expect(system.getSnapshot().remainingMs).toBeGreaterThan(before);
+  });
 });
 
 describe('scene transition guards', () => {

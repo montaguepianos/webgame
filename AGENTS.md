@@ -1,8 +1,10 @@
 # AGENTS.md
 
-> This repository contains a Phaser 3 + TypeScript game (“Melody Dash”) with an optional Express/Firestore API. Agents (Codex/Cursor) must follow these instructions exactly.
+> This repository contains a Phaser 3 + TypeScript game (“Melody Dash”) with an optional
+> Express/Firestore API. Agents (Codex/Cursor) must follow these instructions exactly.
 
 ## Repository layout (target)
+
 - `game/` – Vite + TypeScript + Phaser 3 client
 - `server/` – Express API for high scores (optional; behind feature flag)
 - `shared/` – Types shared between client and server
@@ -11,6 +13,7 @@
 - `docs/` – PRD and design notes
 
 ## Tooling
+
 - Node 20 LTS
 - pnpm 9.x
 - TypeScript strict
@@ -19,15 +22,17 @@
 - Coverage target: 85% lines
 
 ## Setup commands (Mac)
+
 - Install pnpm: `corepack enable && corepack prepare pnpm@latest --activate`
 - Install deps (workspace): `pnpm install`
 - Copy env files:
   - `cp server/.env.example server/.env` (only if server used)
 - Dev servers:
-  - Client: `pnpm --filter game dev` (hot reload at http://localhost:5173)
-  - Server: `pnpm --filter server dev` (http://localhost:8080)
+  - Client: `pnpm --filter game dev` (hot reload at <http://localhost:5173>)
+  - Server: `pnpm --filter server dev` (<http://localhost:8080>)
 
 ## Unified scripts (run from repo root)
+
 - `pnpm setup` – bootstrap workspace (install, prepare husky hooks)
 - `pnpm build` – typecheck + build all packages
 - `pnpm test` – run unit tests (client + server)
@@ -37,6 +42,7 @@
 - `pnpm start` – serve built client via Node in `server/` or a static server if server disabled
 
 ## Agent rules
+
 - Read this file and `docs/PRD.md` before coding.
 - Scaffold a **pnpm workspace** with `game`, `server`, and `shared`.
 - Implement the game in `game/` using Phaser 3 scenes: `Boot`, `Preload`, `Menu`, `Play`, `GameOver`.
@@ -52,12 +58,14 @@
 - Accessibility: focus ring for buttons; reduced-motion toggles animations to fade/slide.
 
 ## Git and PR process
+
 - Branches: `feat/*`, `fix/*`, `chore/*`.
 - Commits: Conventional Commits.
 - PRs must pass `pnpm ci`. If red, the agent must iterate until green.
 - PR description must include a checklist plan and a short demo GIF/screenshot.
 
 ## Deployment (Cloud Run)
+
 - Build container in CI for `server/` which serves both the **built client** (static) and the API.
 - Expose port 8080.
 - Use GitHub Actions workflow `.github/workflows/deploy.yml`:
@@ -70,11 +78,13 @@
 - Provide an `embed.html` (thin wrapper) with an iframe pointing at `/` so Lee can copy-paste into the website.
 
 ## Security & secrets
+
 - Never commit raw audio licensed content; start with placeholders.
 - Don’t commit `.env`; provide `.env.example` with documented keys.
 - Validate API payloads with `zod` and rate limit to deter spam.
 
 ## Definition of Done (agent checklist)
+
 - [ ] Game loop complete with scoring and end screen.
 - [ ] Audio implemented (SFX + loop), with mute/volume control.
 - [ ] Mobile touch controls and desktop keyboard controls.

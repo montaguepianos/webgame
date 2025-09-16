@@ -4,6 +4,8 @@ import type { NoteName, ScoreSummary } from '@melody-dash/shared';
 const COMBO_STEP = 0.2;
 const BASE_NOTE_SCORE = 100;
 const MAX_MISTAKES = 3;
+const PEDAL_BONUS = 240;
+const REST_TIME_BONUS_MS = 3500;
 
 export interface ScoreSnapshot extends ScoreSummary {
   remainingMs: number;
@@ -75,6 +77,35 @@ class ScoreSystem {
       this.active = false;
     }
     return this.mistakes;
+  }
+
+  registerPedal(): { bonus: number; combo: number } {
+    if (!this.active) {
+      return { bonus: 0, combo: this.combo };
+    }
+    const bonus = PEDAL_BONUS + Math.round(this.combo * COMBO_STEP * BASE_NOTE_SCORE);
+    this.combo += 2;
+    this.maxCombo = Math.max(this.maxCombo, this.combo);
+    this.score += bonus;
+    return { bonus, combo: this.combo };
+  }
+
+  registerRest(): { timeAdded: number; mistakes: number } {
+    if (!this.active) {
+      return { timeAdded: 0, mistakes: this.mistakes };
+    }
+    this.extendTime(REST_TIME_BONUS_MS);
+    if (this.mistakes > 0) {
+      this.mistakes -= 1;
+    }
+    return { timeAdded: REST_TIME_BONUS_MS, mistakes: this.mistakes };
+  }
+
+  extendTime(amountMs: number): void {
+    this.remainingMs = Math.max(
+      0,
+      Math.min(this.remainingMs + amountMs, this.durationMs + REST_TIME_BONUS_MS),
+    );
   }
 
   isOver(): boolean {

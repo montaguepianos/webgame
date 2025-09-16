@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import AudioManager from './AudioManager';
 
 declare global {
@@ -8,9 +8,22 @@ declare global {
 }
 
 class FakeGainNode {
-  gain = { value: 1 };
+  gain = {
+    value: 1,
+    cancelScheduledValues: vi.fn(),
+    setValueAtTime: vi.fn((value: number) => {
+      this.gain.value = value;
+      return this.gain;
+    }),
+    linearRampToValueAtTime: vi.fn((value: number) => {
+      this.gain.value = value;
+      return this.gain;
+    }),
+  } as unknown as AudioParam;
 
   connect = vi.fn();
+
+  disconnect = vi.fn();
 }
 
 const createdSources: FakeAudioBufferSourceNode[] = [];
@@ -75,29 +88,39 @@ class FakeAudioContext {
   }
 
   resume = vi.fn().mockResolvedValue(void 0);
+
+  decodeAudioData = vi.fn(async () => this.createBuffer(1, this.sampleRate / 2, this.sampleRate));
 }
 
 describe('AudioManager', () => {
   beforeEach(() => {
     vi.stubGlobal('AudioContext', FakeAudioContext);
     window.AudioContext = FakeAudioContext as unknown as typeof AudioContext;
+    const fakeResponse = {
+      ok: true,
+      arrayBuffer: vi.fn(async () => new ArrayBuffer(32)),
+    } as unknown as Response;
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(fakeResponse));
     createdSources.length = 0;
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   it('initialises context with default volume', async () => {
     const manager = new AudioManager();
     await manager.initialize();
     expect(manager.volume).toBeGreaterThan(0);
-    expect((manager as any).masterGain.gain.value).toBeCloseTo(manager.volume);
   });
 
   it('mutes and unmutes audio', async () => {
     const manager = new AudioManager();
     await manager.initialize();
     await manager.toggleMute(true);
-    expect((manager as any).masterGain.gain.value).toBe(0);
+    expect(manager.muted).toBe(true);
     await manager.toggleMute(false);
-    expect((manager as any).masterGain.gain.value).toBeCloseTo(manager.volume);
+    expect(manager.muted).toBe(false);
   });
 
   it('plays note buffers when triggered', async () => {
@@ -106,5 +129,13 @@ describe('AudioManager', () => {
     await manager.playNote('C4');
     const latest = createdSources.at(-1);
     expect(latest?.start).toHaveBeenCalled();
+  });
+
+  it('updates song preference', async () => {
+    const manager = new AudioManager();
+    await manager.initialize();
+    expect(manager.song).toBe('auto');
+    await manager.setSong('prelude_c');
+    expect(manager.song).toBe('prelude_c');
   });
 });

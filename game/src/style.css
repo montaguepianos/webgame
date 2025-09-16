@@ -4,9 +4,11 @@ body {
   padding: 0;
   width: 100%;
   height: 100%;
-  background-color: #121212;
-  font-family: 'Source Sans Pro', 'Helvetica Neue', Arial, sans-serif;
-  color: #faf7f0;
+  background:
+    radial-gradient(circle at 50% 20%, rgba(193, 164, 100, 0.08), transparent 55%),
+    linear-gradient(180deg, var(--color-ebony-soft) 0%, var(--color-ebony) 45%, #070708 100%);
+  font-family: var(--font-ui);
+  color: var(--color-ivory);
 }
 
 #app {
@@ -17,4 +19,10 @@ body {
 
 canvas {
   outline: none;
+}
+
+button:focus-visible,
+[data-focusable='true']:focus-visible {
+  outline: 2px solid #ffd27f;
+  outline-offset: 2px;
 }

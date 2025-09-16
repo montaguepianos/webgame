@@ -1,92 +1,119 @@
 import Phaser from 'phaser';
 import { GAME_SCENES } from '@melody-dash/shared';
-import { brand, colors, typography } from '../theme';
+import { atlas, backgroundKeys, backgrounds } from '../assets/manifest';
+import { brand, colors, tokens, typography } from '../theme';
 
 class PreloadScene extends Phaser.Scene {
+  static KEY = GAME_SCENES.PRELOAD;
+
   constructor() {
-    super(GAME_SCENES.PRELOAD);
+    super(PreloadScene.KEY);
   }
 
   preload(): void {
-    this.renderLoader();
-    this.generateTextures();
+    const progressBar = this.renderLoader();
+    this.registerLoaderHooks(progressBar);
+    this.loadAtlas();
+    this.loadBackgrounds();
+    this.createUiTextures();
   }
 
   create(): void {
-    this.time.delayedCall(500, () => {
+    this.time.delayedCall(400, () => {
       this.scene.start(GAME_SCENES.MENU);
     });
   }
 
-  private renderLoader(): void {
+  private renderLoader(): Phaser.GameObjects.Rectangle {
     const { width, height } = this.scale;
-    const title = this.add.text(width / 2, height / 2 - 40, brand.title, {
+    const title = this.add.text(width / 2, height / 2 - 48, brand.title, {
       fontFamily: typography.heading,
-      fontSize: '48px',
+      fontSize: '54px',
       color: colors.ivory,
     });
     title.setOrigin(0.5);
 
-    const tagline = this.add.text(width / 2, height / 2 + 10, brand.tagline, {
+    const tagline = this.add.text(width / 2, height / 2 + 4, brand.tagline, {
       fontFamily: typography.body,
-      fontSize: '18px',
+      fontSize: '19px',
       color: colors.cream,
+      align: 'center',
     });
     tagline.setOrigin(0.5);
 
-    const barBg = this.add.rectangle(width / 2, height / 2 + 80, 260, 12, 0xffffff, 0.1);
-    barBg.setStrokeStyle(1, Phaser.Display.Color.HexStringToColor(colors.brass).color);
-    const bar = this.add.rectangle(barBg.x - barBg.width / 2, barBg.y, 12, 8, Phaser.Display.Color.HexStringToColor(colors.teal).color);
+    const barBg = this.add.rectangle(width / 2, height / 2 + 88, 260, 12, 0xffffff, 0.1);
+    barBg.setStrokeStyle(1, Phaser.Display.Color.HexStringToColor(colors.brass).color, 0.8);
+    const bar = this.add.rectangle(
+      barBg.x - barBg.width / 2,
+      barBg.y,
+      26,
+      8,
+      Phaser.Display.Color.HexStringToColor(colors.teal).color,
+    );
     bar.setOrigin(0, 0.5);
+    return bar;
+  }
 
-    this.tweens.add({
-      targets: bar,
-      width: barBg.width,
-      duration: 600,
-      ease: 'Quad.easeInOut',
-      yoyo: true,
-      repeat: -1,
+  private registerLoaderHooks(bar: Phaser.GameObjects.Rectangle): void {
+    const totalWidth = 260;
+    this.load.on('progress', (value: number) => {
+      bar.width = Math.max(24, totalWidth * value);
+    });
+    this.load.on(Phaser.Loader.Events.COMPLETE, () => {
+      this.tweens.add({
+        targets: bar,
+        width: totalWidth,
+        duration: 280,
+        ease: 'Cubic.easeOut',
+      });
     });
   }
 
-  private generateTextures(): void {
+  private loadAtlas(): void {
+    this.load.atlas(atlas.key, atlas.texture, atlas.data);
+  }
+
+  private loadBackgrounds(): void {
+    Object.entries(backgrounds).forEach(([key, url]) => {
+      this.load.image(key, url);
+    });
+    this.load.once(Phaser.Loader.Events.COMPLETE, () => {
+      Object.values(backgroundKeys).forEach((key) => {
+        const texture = this.textures.get(key);
+        if (texture) {
+          texture.setFilter(Phaser.Textures.FilterMode.LINEAR);
+        }
+      });
+    });
+  }
+
+  private createUiTextures(): void {
     const graphics = this.add.graphics();
+    graphics.setVisible(false);
+    const width = 200;
+    const height = 54;
+    const radius = tokens.radii.md;
+
+    graphics.clear();
+    graphics.fillStyle(Phaser.Display.Color.HexStringToColor(colors.teal).color, 1);
+    graphics.fillRoundedRect(0, 0, width, height, radius);
+    graphics.lineStyle(2, Phaser.Display.Color.HexStringToColor(colors.brass).color, 0.8);
+    graphics.strokeRoundedRect(0, 0, width, height, radius);
+    graphics.generateTexture('ui-button', width, height);
 
     graphics.clear();
     graphics.fillStyle(Phaser.Display.Color.HexStringToColor(colors.brass).color, 1);
-    graphics.fillRoundedRect(0, 0, 48, 64, 12);
-    graphics.lineStyle(3, Phaser.Display.Color.HexStringToColor(colors.cream).color, 0.8);
-    graphics.beginPath();
-    graphics.moveTo(12, 20);
-    graphics.lineTo(36, 32);
-    graphics.lineTo(12, 44);
-    graphics.strokePath();
-    graphics.generateTexture('note-token', 48, 64);
+    graphics.fillRoundedRect(0, 0, width, height, radius);
+    graphics.lineStyle(2, Phaser.Display.Color.HexStringToColor(colors.cream).color, 0.9);
+    graphics.strokeRoundedRect(0, 0, width, height, radius);
+    graphics.generateTexture('ui-button-active', width, height);
 
     graphics.clear();
-    graphics.fillStyle(Phaser.Display.Color.HexStringToColor(colors.royalRed).color, 0.9);
-    graphics.fillRoundedRect(0, 0, 44, 44, 16);
-    graphics.fillStyle(0x000000, 0.15);
-    graphics.fillCircle(32, 32, 10);
-    graphics.generateTexture('dust-token', 44, 44);
-
-    graphics.clear();
-    graphics.fillStyle(Phaser.Display.Color.HexStringToColor(colors.ivory).color, 1);
-    graphics.fillRoundedRect(0, 0, 72, 60, 10);
-    graphics.fillStyle(0x000000, 1);
-    graphics.fillRect(6, 12, 60, 12);
-    graphics.fillStyle(Phaser.Display.Color.HexStringToColor(colors.brass).color, 1);
-    graphics.fillRect(6, 26, 60, 24);
-    graphics.lineStyle(1, Phaser.Display.Color.HexStringToColor(colors.cream).color);
-    for (let i = 0; i < 7; i += 1) {
-      graphics.lineBetween(12 + i * 8, 26, 12 + i * 8, 50);
-    }
-    graphics.generateTexture('piano-avatar', 72, 60);
-
-    graphics.clear();
-    graphics.fillStyle(Phaser.Display.Color.HexStringToColor(colors.teal).color, 0.8);
-    graphics.fillCircle(8, 8, 8);
-    graphics.generateTexture('spark', 16, 16);
+    graphics.fillStyle(Phaser.Display.Color.HexStringToColor(colors.ebonySoft).color, 0.65);
+    graphics.fillRoundedRect(0, 0, width, 42, radius);
+    graphics.lineStyle(1, Phaser.Display.Color.HexStringToColor(colors.cream).color, 0.4);
+    graphics.strokeRoundedRect(0, 0, width, 42, radius);
+    graphics.generateTexture('ui-pill', width, 42);
 
     graphics.destroy();
   }

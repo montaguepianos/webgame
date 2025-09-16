@@ -1,15 +1,24 @@
+import { accents, fonts, metrics, palette, radii, shadows, spacing } from './theme/tokens';
+
 export const colors = {
-  ebony: '#121212',
-  ivory: '#FAF7F0',
-  brass: '#C1A464',
-  royalRed: '#9C1C2B',
-  teal: '#1E8A9E',
-  cream: '#F3E3C6',
+  ...palette,
 };
 
+export const tokens = {
+  palette,
+  accents,
+  spacing,
+  radii,
+  fonts,
+  shadows,
+};
+
+export { spacing, radii, accents, shadows, fonts } from './theme/tokens';
+
 export const typography = {
-  heading: '"Playfair Display", "Georgia", serif',
-  body: '"Source Sans Pro", "Helvetica Neue", Arial, sans-serif',
+  heading: fonts.display,
+  body: fonts.ui,
+  mono: fonts.mono,
 };
 
 export const brand = {
@@ -18,6 +27,6 @@ export const brand = {
 };
 
 export const layout = {
-  worldWidth: 960,
-  worldHeight: 540,
+  worldWidth: metrics.worldWidth,
+  worldHeight: metrics.worldHeight,
 };

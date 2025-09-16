@@ -43,12 +43,14 @@ export interface GameSettings {
   volume: number;
   muted: boolean;
   reducedMotion: boolean;
+  song: string;
 }
 
 export const DEFAULT_SETTINGS: GameSettings = {
   volume: 0.7,
   muted: false,
   reducedMotion: false,
+  song: 'auto',
 };
 
 export const GAME_SCENES = {

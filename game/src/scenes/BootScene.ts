@@ -3,8 +3,10 @@ import { GAME_SCENES } from '@melody-dash/shared';
 import { colors, layout } from '../theme';
 
 class BootScene extends Phaser.Scene {
+  static KEY = GAME_SCENES.BOOT;
+
   constructor() {
-    super(GAME_SCENES.BOOT);
+    super(BootScene.KEY);
   }
 
   create(): void {

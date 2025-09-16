@@ -16,6 +16,8 @@
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^1.4.0",
+    "jsdom": "^27.0.0",
+    "phaser3spectorjs": "^0.0.8",
     "vite": "^5.1.0",
     "vitest": "^1.4.0"
   }

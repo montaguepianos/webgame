@@ -32,7 +32,9 @@ class FirestoreScoreRepository implements ScoreRepository {
       });
     }
     const firestore = admin.firestore();
-    this.collection = firestore.collection(collectionName) as FirebaseFirestore.CollectionReference<ScoreSubmission>;
+    this.collection = firestore.collection(
+      collectionName,
+    ) as FirebaseFirestore.CollectionReference<ScoreSubmission>;
   }
 
   async addScore(entry: ScoreSubmission): Promise<void> {
