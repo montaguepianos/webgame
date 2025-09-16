@@ -1,0 +1,5 @@
+node_modules
+server/dist
+game/dist
+shared/dist
+coverage

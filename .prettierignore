@@ -1,0 +1,10 @@
+node_modules
+pnpm-lock.yaml
+coverage
+server/dist
+game/dist
+shared/dist
+**/*.png
+**/*.mp3
+**/*.ogg
+**/*.wav
