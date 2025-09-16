@@ -31,5 +31,8 @@
     "markdownlint-cli": "^0.39.0",
     "prettier": "^3.2.5",
     "typescript": "^5.4.2"
+  },
+  "volta": {
+    "node": "20.19.5"
   }
 }

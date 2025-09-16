@@ -1,4 +1,8 @@
 packages:
-  - "game"
-  - "server"
-  - "shared"
+  - game
+  - server
+  - shared
+
+onlyBuiltDependencies:
+  - esbuild
+  - protobufjs
